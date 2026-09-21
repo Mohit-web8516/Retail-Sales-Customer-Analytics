@@ -34,13 +34,22 @@ This project analyzes nearly **10,000 retail transaction records** to answer:
 ## Project Structure
 
 ```text
-retail-sales-analytics/
+Retail-Sales-Customer-Analytics/
 │
-├── Data/              # Raw CSV and cleaned dataset
-├── SQL/               # Schema, data loading, verification, and analysis queries
-├── notebooks/         # Python EDA and visualization notebooks
-├── Dashboard/         # Power BI file and dashboard screenshots
-└── README.md
+├── Data/                  # Raw Superstore CSV and cleaned dataset
+│
+├── SQL/                   # Database schema, data loading,
+│                          # verification, and analysis queries
+│
+├── notebooks/             # Python EDA, data cleaning,
+│                          # and data visualization notebooks
+│
+├── PDF/                   # PDF versions of EDA and
+│                          # data visualization notebooks
+│
+├── Dashboard/             # Power BI file and dashboard screenshots
+│
+└── README.md              # Project documentation
 ```
 
 ---
