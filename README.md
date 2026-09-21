@@ -41,6 +41,9 @@ retail-sales-analytics/
 ├── notebooks/         # Python EDA and visualization notebooks
 ├── Dashboard/         # Power BI file and dashboard screenshots
 └── README.md
+```
+
+---
 
 ## **Dataset**
 
