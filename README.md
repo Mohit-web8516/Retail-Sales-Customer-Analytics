@@ -1,145 +1,359 @@
 # Retail Sales & Customer Analytics — SQL, Python & Power BI
 
-An end-to-end data analytics project analyzing retail sales, discounting 
-behavior, and product/category profitability using the classic Superstore 
-dataset, built as a complete SQL → Python → Power BI pipeline.
+An end-to-end data analytics project analyzing retail sales, customer behavior, discounting, and product/category profitability using the classic Superstore dataset.
+
+The project follows a complete **SQL → Python → Power BI** analytics pipeline, transforming raw transaction data into validated insights and interactive business dashboards.
+
+---
 
 ## Problem Statement
 
-A retail business wants to understand what's actually driving profit — not 
-just revenue — across products, categories, regions, and discount policies. 
-This project analyzes ~10,000 transactions to answer:
+A retail business wants to understand what's actually driving profit — not just revenue — across products, categories, customers, regions, and discount policies.
 
-1. Is revenue seasonal, and is the business growing year over year?
-2. Does discounting help or hurt profitability?
-3. Which products, categories, and regions are genuinely profitable — not 
-   just high-selling?
+This project analyzes nearly **10,000 retail transaction records** to answer:
+
+1. Is revenue seasonal?
+2. Does discounting affect profitability?
+3. Which products and categories generate healthy margins?
+4. Are high-selling products always profitable?
+5. How is sales performance distributed across regions?
+6. Which customer segments and customers contribute most to sales and profit?
+
+---
 
 ## Tools Used
 
-- **SQL Server** — data cleaning, normalization, and business analysis queries
-- **Python (Pandas, NumPy, Matplotlib, Seaborn)** — validation, feature 
-  engineering, and visualization
-- **Power BI** — interactive single-page dashboard with DAX measures
-- **Git/GitHub** — version control
+- **SQL Server** — data cleaning, normalization, validation, and business analysis
+- **Python** — Pandas, NumPy, Matplotlib, Seaborn
+- **Jupyter Notebook** — EDA and data visualization
+- **Power BI** — interactive dashboards and DAX measures
+- **Git/GitHub** — version control and project management
+
+---
 
 ## Project Structure
 
-```
+```text
 retail-sales-analytics/
+│
 ├── Data/              # Raw CSV and cleaned dataset
-├── SQL/               # Schema, data load, verification, and analysis queries
-├── notebooks/          # Python EDA and visualization notebooks
-├── Dashboard/          # Power BI file and exported chart images
+├── SQL/               # Schema, data loading, verification, and analysis queries
+├── notebooks/         # Python EDA and visualization notebooks
+├── Dashboard/         # Power BI file and dashboard screenshots
 └── README.md
-```
 
-## Dataset
+## **Dataset**
 
-The classic "Sample Superstore" dataset — ~10,000 US retail transactions, 
-including order details, customer info, product/category info, sales, 
-discount, and profit.
+The project uses the classic Sample Superstore dataset containing nearly 10,000 US retail transaction records.
+The dataset includes:
+- Order details
+- Customer information
+- Product information
+- Categories and sub-categories
+- Regions
+- Sales
+- Quantity
+- Discount
+- Profit
+- Order and shipping dates
+Dataset Overview
+- Original transaction rows: 9,994
+- Valid transaction rows after cleaning: 9,993
+- Distinct orders: 5,009
+- Unique customers: 793
+Transaction rows and orders are different metrics because a single order can contain multiple product records.
 
-## Data Cleaning & Data Quality Issues Found
+## **Data Cleaning & Data Quality Issues Found**
+Several data quality issues were identified and handled during the SQL and Python phases.
+1. NULL Profit Value
+One row contained a NULL profit value:
+- Order ID: CA-2017-168389
+- Customer: Darrin Van Huff
+Since this affected only 1 of 9,994 rows, the record was documented and excluded rather than imputing a financial value.
+This resulted in 9,993 valid transaction rows being used for analysis.
+2. Duplicate Customer Records
+Some CustomerIDs appeared multiple times with conflicting City/State combinations across different orders.
+This initially violated the intended PRIMARY KEY constraint on the normalized Customers table.
+The issue was resolved using GROUP BY with MAX() as a deterministic tie-breaker rather than relying on a plain DISTINCT.
+3. Column Type Misdetection During Import
+SQL Server's import wizard initially detected the Profit column as NOT NULL, causing an insert failure.
+The column definition was corrected to allow NULL values before re-importing the data.
 
-- **One row with a NULL profit value** (Order ID CA-2017-168389, customer 
-  Darrin Van Huff) — since this affected only 1 of 9,994 rows, it was 
-  documented and excluded rather than imputed, to avoid fabricating a 
-  financial figure.
-- **Duplicate customer records with conflicting values** — some CustomerIDs 
-  appeared multiple times with different City/State combinations across 
-  orders, which initially violated the intended PRIMARY KEY constraint on 
-  the normalized Customers table. Resolved using `GROUP BY` with `MAX()` as 
-  a tie-breaker instead of a plain `DISTINCT`.
-- **Column type misdetection on import** — SQL Server's import wizard 
-  initially set `Profit` as NOT NULL, causing an insert failure; corrected 
-  by explicitly allowing NULLs on that column before re-importing.
+## **SQL Data Model**
+The transaction data was organized into a normalized relational structure consisting of three main tables:
+Customers
+    │
+    │ CustomerID
+    ▼
+  Orders
+    │
+    ├── CustomerID
+    │
+    └── ProductID
+             │
+             ▼
+          Products
+Customers
+- CustomerID
+- CustomerName
+- Segment
+- Location attributes
+Products
+- ProductID
+- ProductName
+- Category
+- SubCategory
+Orders
+- OrderID
+- OrderDate
+- ShipDate
+- CustomerID
+- ProductID
+- Sales
+- Quantity
+- Discount
+- Profit
 
-## SQL Analysis — Key Findings
+## **SQL Analysis — Key Findings**
+1. Revenue Is Seasonal
+Revenue consistently peaks during November and December across the years in the dataset, with a noticeable decline during January and February.
+November 2017 recorded the highest monthly revenue in the dataset.
+This indicates a clear seasonal pattern in sales performance.
 
-**1. Revenue is seasonal and grows year over year.**
-Revenue consistently peaks in November–December each year and drops sharply 
-in January–February. November 2017 was the single highest-revenue month in 
-the dataset. Overall revenue grew year over year from 2014 to 2017.
+2. Higher Discounts Are Associated With Lower Profitability
+Average profit per order decreases substantially as discount levels increase.
+Discount Band	Orders	Avg Profit / Order
+No Discount	4,798	+$66.90
+Low (0–20%)	3,803	+$26.50
+Medium (20–40%)	460	-$77.86
+High (40%+)	932	-$106.37
+Medium and high discount bands show negative average profit per order, while no-discount and low-discount orders remain profitable on average.
+This is one of the strongest profitability patterns identified in the dataset.
 
-**2. Discounting above 20% turns orders unprofitable.**
-Average profit per order declines steadily as discount level increases:
+3. High Sales Don't Guarantee High Profit
+Product-level analysis shows that revenue alone is not enough to evaluate product performance.
+The Canon imageCLASS 2200 Advanced Copier is among the strongest performers in terms of both sales and profit.
+In contrast, products such as:
+- Cisco TelePresence System EX90 Videoconferencing Unit
+- GBC DocuBind P400 Electric Binding System
+- High Speed Automatic Electric Letter Opener
+generate substantial sales but show poor or negative profitability.
+This demonstrates why sales volume should be evaluated alongside profitability.
 
-| Discount Band | Orders | Avg Profit/Order |
-|---|---|---|
-| No Discount | 4,798 | +$66.90 |
-| Low (0–20%) | 3,803 | +$26.50 |
-| Medium (20–40%) | 460 | -$77.86 |
-| High (40%+) | 933 | -$106.37 |
+4. Furniture Has a Margin Problem
+Furniture generates substantial sales but has significantly lower profitability compared with the other categories.
+Category	Sales	Profit	Avg Profit Margin
+Technology	$836,154	$145,455	15.6%
+Office Supplies	$719,047	$122,490	13.8%
+Furniture	$741,278	$18,871	3.9%
+Furniture generates approximately $741K in sales, but its average profit margin is only 3.9%, compared with 15.6% for Technology and 13.8% for Office Supplies.
+This highlights the need to investigate pricing, discounting, product mix, and cost structure within the Furniture category.
 
-This is the strongest insight in the dataset: discounts above 20% 
-consistently lose money on average.
+5. Sales Are Concentrated in the West Region
+The West region contributes approximately $2.1M in sales, making it the largest contributor among the regions in the analysis.
+This highlights a significant regional concentration that can be investigated further when evaluating geographic performance and growth opportunities.
 
-**3. High sales don't guarantee high profit at the product level.**
-The Canon imageCLASS 2200 Advanced Copier is the top performer on both 
-sales ($61,599) and profit ($25,199). However, the Cisco TelePresence System 
-(3rd highest by sales) posts a $1,811 loss, and the GBC DocuBind P400 
-similarly sells well but loses money — proving revenue alone is a poor 
-indicator of profitability.
+## **Python Analysis**
+Python was used to validate the SQL findings, perform exploratory data analysis, engineer additional features, and visualize important patterns.
+Feature Engineering
+The analysis created additional features including:
+- OrderYear
+- OrderMonth
+- ShippingDelayDays
+- ProfitMargin
+Additional Insights
+Shipping delay showed limited impact on profitability.
+Average profit margins remained broadly within the 10–15% range across shipping delays of 0–7 days, suggesting that shipping delay was not a major profitability driver in this dataset.
+Profit Margin Distribution
+The order-level profit margin distribution contains a long left tail of loss-making orders.
+- Mean profit margin: ~12%
+- Median profit margin: ~27%
+The difference is influenced by extreme loss-making orders.
 
-**4. Furniture has a margin problem, not a sales problem.**
-Furniture generates the 2nd-highest total sales ($741,278) but converts only 
-3.9% of that into profit ($18,871) — far below Technology (15.6% margin) 
-and Office Supplies (13.8% margin). Total profit figures alone mask this — 
-Furniture looks "fine" in aggregate but is structurally the weakest category 
-on a per-dollar basis.
+## **Power BI Dashboard**
+The final Power BI dashboard contains two interactive pages connected to the SQL-based dataset.
 
-**5. Sales are heavily concentrated in the West region.**
-The West region accounts for the large majority of total sales ($2.1M), 
-dwarfing South, East, and Central — a concentration risk worth flagging for 
-regional diversification.
+### **1. Sales & Profitability Overview**
 
-## Business Recommendations
-
-- Cap discounts at 20% as a default policy; require approval for anything 
-  higher, since orders above that threshold lose money on average
-- Review pricing/cost structure for Furniture and specific underperforming 
-  products (Cisco TelePresence, GBC DocuBind P400) — high sales volume is 
-  being undermined by poor margins
-- Investigate regional concentration risk in the West and evaluate growth 
-  opportunities in underrepresented regions
-
-## Python Analysis
-
-The Python notebooks (`/notebooks`) connect directly to the SQL Server 
-database, cross-validate every SQL finding above, and add two additional 
-insights:
-
-- **Shipping delay has minimal impact on profitability** — average profit 
-  margin stays consistently between 10–15% regardless of delivery time 
-  (0–7 days)
-- **Furniture's margin problem is confirmed at the order level** — the 
-  distribution of order-level profit margins shows a distinct left tail of 
-  loss-making orders, disproportionately pulling down the overall average 
-  margin (12%) relative to the median (27%)
-
-## Power BI Dashboard
-
-An interactive single-page dashboard connected live to the SQL Server 
-database, including:
-- 5 KPI cards (Total Sales, Total Profit, Total Orders, Average Discount, 
-  Profit Margin %)
-- Region and Category slicers
-- Monthly revenue trend by year
-- Category-level sales vs. profit comparison
-- Regional sales distribution
-- Discount band vs. profit chart
+The first page provides an overview of overall business performance.
+Key KPIs
+- Total Orders: 5,009 distinct orders
+- Total Sales: $2.30M
+- Total Profit: $286.82K
+- Profit Margin: 12.49%
+- Average Discount: 15.62%
+Dashboard Includes
+- Monthly sales trend by year
+- Sales vs. profit by category
+- Sales by region
+- Profit by discount band
 - Top 10 products by sales
+- Segment filter
+- Category filter
+- Region filter
+### **Dashboard Preview**
 
-## How to Reproduce
+![Sales & Profitability Overview](Dashboard/Sales_Profitability_Overview.png)
+ 
+### **2. Customer Analysis**
 
-1. Import the raw CSV in `/data` into SQL Server as a staging table
-2. Run `/sql/schema.sql` and `/sql/load_data.sql` to build and populate the 
-   normalized Customers, Products, and Orders tables
-3. Run `/sql/verify.sql` to confirm row counts and check data quality
-4. Run `/sql/queries.sql` for the core business analysis
-5. Open `/notebooks/01_eda_and_cleaning.ipynb` to reproduce the Python 
-   cleaning and validation
-6. Open `/notebooks/02_data_visualization.ipynb` (or your visualization 
-   notebook) to reproduce the charts
-7. Open the Power BI file in `/dashboard` to explore the interactive dashboard
+The second page focuses on customer-level sales and profitability.
+Key KPIs
+- Total Customers: 793
+- Average Profit per Customer: $361.69
+- Average Sales per Customer: $2.90K
+Dashboard Includes
+- Customers by segment
+- Top 10 customers by sales
+- Top 10 customers by profit
+- Customer Sales vs. Profit analysis
+- Customer-level Sales, Profit, and Profit Margin
+- Sales by customer segment
+### **Dashboard Preview**
+
+![Customer Analysis](Dashboard/Customer_Analysis.png)
+## **Business Recommendations**
+
+Based on the analysis, several areas can be investigated further:
+
+### **1. Review High-Discount Orders**
+Medium and high discount bands show negative average profit per order.
+Discounting policies, particularly discounts above 20%, should therefore be reviewed before being applied broadly.
+
+### **2. Investigate Furniture Profitability**
+Furniture generates significant sales but has the lowest category-level profit margin.
+Pricing, discounting, product mix, and cost structure should be investigated to understand the margin gap.
+
+### **3. Review Loss-Making High-Sales Products**
+
+Products generating high sales but negative profit should be investigated individually.
+Potential areas include:
+- Pricing
+- Discounting
+- Product costs
+- Product mix
+
+### **4. Evaluate Regional Concentration**
+The strong contribution from the West region provides a reason to investigate sales performance and growth opportunities across the other regions.
+
+## **End-to-End Analytics Workflow**
+Raw Superstore Dataset
+          ↓
+      SQL Server
+          ↓
+Data Cleaning & Normalization
+          ↓
+   SQL Business Analysis
+          ↓
+       Python EDA
+          ↓
+Data Validation & Feature Engineering
+          ↓
+  Python Visualization
+          ↓
+    Power BI Dashboard
+          ↓
+    Business Insights
+
+## **How to Reproduce**
+Step 1 — Load the Dataset
+Import the raw Superstore CSV from /Data into SQL Server as a staging table.
+Step 2 — Create the Database Schema
+Run:
+/SQL/schema.sql
+This creates the normalized Customers, Products, and Orders tables.
+Step 3 — Load the Data
+Run:
+/SQL/load_data.sql
+to populate the database.
+Step 4 — Verify the Data
+Run:
+/SQL/verify.sql
+to check:
+- Row counts
+- NULL values
+- Duplicate records
+- Data integrity
+Step 5 — Run Business Analysis
+Run:
+/SQL/queries.sql
+to reproduce the core SQL analysis.
+Step 6 — Run Python EDA
+Open:
+/notebooks/01_eda_and_cleaning.ipynb
+to reproduce:
+- Data cleaning
+- Data validation
+- Feature engineering
+- Exploratory analysis
+Step 7 — Run Data Visualization
+Open:
+/notebooks/02_data_visualization.ipynb
+to reproduce the Python visualizations.
+Step 8 — Explore the Power BI Dashboard
+Open:
+/Dashboard/Retail_Sales_Customer_Analytics.pbix
+using Power BI Desktop.
+The .pbix file is included in the repository for downloading and exploring the interactive dashboard.
+
+# **Key Takeaways**
+This project demonstrates an end-to-end approach to transforming raw transactional data into business insights using:
+SQL → Python → Power BI
+
+The analysis highlights:
+- Revenue has strong seasonal behavior, with November and December showing higher sales.
+- Higher discount levels are associated with lower profitability.
+- High sales do not necessarily translate into high profit.
+- Furniture has substantially lower margins than Technology and Office Supplies.
+- Sales are highly concentrated in the West region.
+- Shipping delay shows limited relationship with profitability.
+- Customer-level analysis provides additional insight beyond overall sales performance.
+
+## **Skills Demonstrated**
+
+### **SQL**
+- Database Design
+- Data Normalization
+- Data Cleaning
+- Data Validation
+- Joins
+- Aggregations
+- GROUP BY
+- CASE Statements
+- Business Analysis Queries
+
+### **Python**
+- Pandas
+- NumPy
+- Matplotlib
+- Seaborn
+- Exploratory Data Analysis
+- Feature Engineering
+- Data Visualization
+
+### **Power BI**
+- Data Modeling
+- DAX Measures
+- KPI Cards
+- Slicers & Filters
+- Interactive Visualizations
+- Sales & Profitability Analysis
+- Customer Analysis
+
+### **Tools**
+- SQL Server Management Studio
+- Jupyter Notebook
+- Power BI Desktop
+- Git
+- GitHub
+
+## **Project Summary**
+Retail Sales & Customer Analytics
+An end-to-end analytics project built to demonstrate the ability to work with real-world transactional data, perform data cleaning and analysis, validate findings using Python, and communicate business insights through an interactive Power BI dashboard.
+
+**Tech Stack:**
+
+`SQL Server` · `Python` · `Pandas` · `NumPy` · `Matplotlib` · `Seaborn` · `Power BI` · `DAX` · `Git` · `GitHub`
+
+⭐ If you found this project useful or interesting, feel free to explore the repository and Power BI dashboard.
+
